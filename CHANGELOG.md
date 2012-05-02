@@ -1,5 +1,10 @@
 # JSONKit Changelog
 
+## Version 1.5 2012/05/01, added by Sam Olsen
+
+### New Features
+*		Add a parsing option to omit dictionary key-value pairs for null values. I.e. `{foo:null, bar:"hello"}` is parsed into a dictionary object only containing the `bar` KV pair.
+
 ## Version 1.X ????/??/??
 
 **IMPORTANT:** The following changelog notes are a work in progress.  They apply to the work done on JSONKit post v1.4.  Since JSONKit itself is inbetween versions, these changelog notes are subject to change, may be wrong, and just about everything else you could expect at this point in development.

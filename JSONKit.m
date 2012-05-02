@@ -555,7 +555,7 @@ static void              _JKArrayRemoveObjectAtIndex(JKArray *array, NSUInteger 
 
 
 static NSUInteger        _JKDictionaryCapacityForCount(NSUInteger count);
-static JKDictionary     *_JKDictionaryCreate(id *keys, NSUInteger *keyHashes, id *objects, NSUInteger count, BOOL mutableCollection);
+static JKDictionary     *_JKDictionaryCreate(JKParseState *parseState, id *keys, NSUInteger *keyHashes, id *objects, NSUInteger count, BOOL mutableCollection);
 static JKHashTableEntry *_JKDictionaryHashEntry(JKDictionary *dictionary);
 static NSUInteger        _JKDictionaryCapacity(JKDictionary *dictionary);
 static void              _JKDictionaryResizeIfNeccessary(JKDictionary *dictionary);
@@ -922,7 +922,7 @@ static void _JKDictionaryResizeIfNeccessary(JKDictionary *dictionary) {
   }
 }
 
-static JKDictionary *_JKDictionaryCreate(id *keys, NSUInteger *keyHashes, id *objects, NSUInteger count, BOOL mutableCollection) {
+static JKDictionary *_JKDictionaryCreate(JKParseState *parseState, id *keys, NSUInteger *keyHashes, id *objects, NSUInteger count, BOOL mutableCollection) {
   NSCParameterAssert((keys != NULL) && (keyHashes != NULL) && (objects != NULL) && (_JKDictionaryClass != NULL) && (_JKDictionaryInstanceSize > 0UL));
   JKDictionary *dictionary = NULL;
   if(JK_EXPECT_T((dictionary = (JKDictionary *)calloc(1UL, _JKDictionaryInstanceSize)) != NULL)) { // Directly allocate the JKDictionary instance via calloc.
@@ -934,7 +934,12 @@ static JKDictionary *_JKDictionaryCreate(id *keys, NSUInteger *keyHashes, id *ob
     if(JK_EXPECT_F((dictionary->entry = (JKHashTableEntry *)calloc(1UL, sizeof(JKHashTableEntry) * dictionary->capacity)) == NULL)) { [dictionary autorelease]; return(NULL); }
 
     NSUInteger idx = 0UL;
-    for(idx = 0UL; idx < count; idx++) { _JKDictionaryAddObject(dictionary, keyHashes[idx], keys[idx], objects[idx]); }
+    for(idx = 0UL; idx < count; idx++) {
+        if (parseState->parseOptionFlags & JKParseOptionOmitKVPairsForNullValues && objects[idx] == (void *)kCFNull)
+            continue;
+        
+        _JKDictionaryAddObject(dictionary, keyHashes[idx], keys[idx], objects[idx]); 
+    }
 
     dictionary->mutations = (mutableCollection == NO) ? 0UL : 1UL;
   }
@@ -1871,7 +1876,7 @@ static void *jk_create_dictionary(JKParseState *parseState, size_t startingObjec
 
   parseState->objectStack.index--;
 
-  parsedDictionary = _JKDictionaryCreate((id *)&parseState->objectStack.keys[startingObjectIndex], (NSUInteger *)&parseState->objectStack.cfHashes[startingObjectIndex], (id *)&parseState->objectStack.objects[startingObjectIndex], (parseState->objectStack.index - startingObjectIndex), parseState->mutableCollections);
+  parsedDictionary = _JKDictionaryCreate(parseState, (id *)&parseState->objectStack.keys[startingObjectIndex], (NSUInteger *)&parseState->objectStack.cfHashes[startingObjectIndex], (id *)&parseState->objectStack.objects[startingObjectIndex], (parseState->objectStack.index - startingObjectIndex), parseState->mutableCollections);
 
   return(parsedDictionary);
 }
